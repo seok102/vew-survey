@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>정보 시각화 그래프 사용자 평가</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+        h2 { margin-top: 40px; }
+        .question { margin-bottom: 30px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .images-row { display: flex; gap: 15px; margin-top: 10px; }
+        .thumbnail { width: 120px; height: 90px; object-fit: cover; cursor: pointer; border: 2px solid #ccc; border-radius: 6px; }
+        .popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px solid #333; background: #fff; z-index: 1000; padding: 5px; }
+        .popup img { max-width: 640px; max-height: 480px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; }
+    </style>
+</head>
+<body>
+    <h1>정보 시각화 사용자 평가 설문</h1>
+    <p>각 항목당 5개의 그래프 예시를 확인하고, 가장 우수한 것부터 가장 미흡한 것까지 순위를 정해주세요.</p>
+
+    <div id="survey"></div>
+
+    <div class="overlay" onclick="closePopup()"></div>
+    <div class="popup" id="popup"><img id="popup-img" src="" alt=""></div>
+
+    <script>
+        const questions = [
+            "정보 밀도(Information Density)",
+            "정확성(Accuracy)",
+            "색상 효과성(Color Effectiveness)",
+            "글자 적합성(Typographic Suitability)",
+            "색상 적절성(Color Appropriateness)",
+            "대비 가독성(Contrast Readability)",
+            "텍스트 인식 품질(Text Recognition Quality)",
+            "텍스트 위치 구조(Text Position Structure)"
+        ];
+
+        const sampleCount = 30;
+        const showPerQuestion = 5;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderSurvey() {
+            const container = document.getElementById('survey');
+            container.innerHTML = '';
+            shuffle(questions).forEach((qText, index) => {
+                const div = document.createElement('div');
+                div.className = 'question';
+
+                const title = document.createElement('h2');
+                title.textContent = `Q${index + 1}. ${qText}`;
+                div.appendChild(title);
+
+                const row = document.createElement('div');
+                row.className = 'images-row';
+
+                const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
+                samples.forEach(num => {
+                    const img = document.createElement('img');
+                    img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
+                    img.className = 'thumbnail';
+                    img.alt = `샘플 ${num}`;
+                    img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
+                    row.appendChild(img);
+                });
+
+                div.appendChild(row);
+                container.appendChild(div);
+            });
+        }
+
+        function openPopup(src) {
+            document.getElementById('popup-img').src = src;
+            document.getElementById('popup').style.display = 'block';
+            document.querySelector('.overlay').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+        }
+
+        window.onload = () => {
+    renderSurvey();
+
+    // 제출 버튼 추가
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = '설문 제출';
+    submitBtn.style.marginTop = '40px';
+    submitBtn.style.padding = '10px 20px';
+    submitBtn.style.fontSize = '16px';
+    submitBtn.onclick = submitSurvey;
+    document.body.appendChild(submitBtn);
+};
+    function submitSurvey() {
+    const surveyData = {
+        sessionId: Date.now().toString(),
+        answers: {}
+    };
+    const questionBlocks = document.querySelectorAll('.question');
+
+    questionBlocks.forEach((block, idx) => {
+        const qTitle = block.querySelector('h2').textContent;
+        const questionKey = qTitle.substring(qTitle.indexOf('.') + 2);
+        const thumbnails = Array.from(block.querySelectorAll('img'));
+        const answerList = thumbnails.map(img => img.alt);
+        surveyData.answers[questionKey] = answerList;
+    });
+
+    fetch("YOUR_GOOGLE_SCRIPT_WEBAPP_URL", {
+        method: "POST",
+        body: JSON.stringify(surveyData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.text())
+    .then(msg => alert("제출이 완료되었습니다."))
+    .catch(err => alert("제출 오류: " + err));
+}
+</script>
+</body>
+</html>
