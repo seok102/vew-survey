@@ -24,155 +24,159 @@
     <div class="popup" id="popup"><img id="popup-img" src="" alt=""></div>
 
     <script>
-        const questions = [
-  {
-    title: "정보 밀도 (Information Density)",
-    description: "가장 적절한 정보량(너무 단순하지도 복잡하지도 않은)을 가진 그래프는?"
-  },
-  {
-    title: "정확성 (Accuracy)",
-    description: "가장 정확하게 정보를 전달하고 있는 그래프는?"
-  },
-  {
-    title: "색상 효과성 (Color Effectiveness)",
-    description: "색상이 가장 효과적으로 구분되어 있는 그래프는?"
-  },
-  {
-    title: "글자 적합성 (Typographic Suitability)",
-    description: "텍스트의 글꼴, 위치가 가장 보기 좋은 그래프는?"
-  },
-  {
-    title: "색상 적절성 (Color Appropriateness)",
-    description: "색상 선택이 가장 적절한 그래프는?"
-  },
-  {
-    title: "대비 가독성 (Contrast Readability)",
-    description: "글자나 요소가 배경과 잘 구분되는 그래프는?"
-  },
-  {
-    title: "텍스트 인식 품질 (Text Recognition Quality)",
-    description: "텍스트가 가장 뚜렷하고 쉽게 읽히는 그래프는?"
-  },
-  {
-    title: "텍스트 위치 구조 (Text Position Structure)",
-    description: "텍스트가 논리적이고 적절한 위치에 배치된 그래프는?"
-  }
-];
-
-        const sampleCount = 30;
-        const showPerQuestion = 5;
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
+    const questions = [
+        {
+            title: "정보 밀도 (Information Density)",
+            description: "가장 적절한 정보량(너무 단순하지도 복잡하지도 않은)을 가진 그래프는?"
+        },
+        {
+            title: "정확성 (Accuracy)",
+            description: "가장 정확하게 정보를 전달하고 있는 그래프는?"
+        },
+        {
+            title: "색상 효과성 (Color Effectiveness)",
+            description: "색상이 가장 효과적으로 구분되어 있는 그래프는?"
+        },
+        {
+            title: "글자 적합성 (Typographic Suitability)",
+            description: "텍스트의 글꼴, 위치가 가장 보기 좋은 그래프는?"
+        },
+        {
+            title: "색상 적절성 (Color Appropriateness)",
+            description: "색상 선택이 가장 적절한 그래프는?"
+        },
+        {
+            title: "대비 가독성 (Contrast Readability)",
+            description: "글자나 요소가 배경과 잘 구분되는 그래프는?"
+        },
+        {
+            title: "텍스트 인식 품질 (Text Recognition Quality)",
+            description: "텍스트가 가장 뚜렷하고 쉽게 읽히는 그래프는?"
+        },
+        {
+            title: "텍스트 위치 구조 (Text Position Structure)",
+            description: "텍스트가 논리적이고 적절한 위치에 배치된 그래프는?"
         }
+    ];
+
+    const sampleCount = 30;
+    const showPerQuestion = 5;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
 
     function renderSurvey() {
-    const container = document.getElementById('survey');
-    container.innerHTML = '';
-    questions.forEach((q, index) => {
-        const div = document.createElement('div');
-        div.className = 'question';
+        const container = document.getElementById('survey');
+        container.innerHTML = '';
+        questions.forEach((q, index) => {
+            const div = document.createElement('div');
+            div.className = 'question';
 
-        const title = document.createElement('h2');
-        title.textContent = `Q${index + 1}. ${q.title}`;
-        div.appendChild(title);
+            const title = document.createElement('h2');
+            title.textContent = `Q${index + 1}. ${q.title}`;
+            div.appendChild(title);
 
-        const desc = document.createElement('p');
-        desc.textContent = q.description;
-        div.appendChild(desc);
+            const desc = document.createElement('p');
+            desc.textContent = q.description;
+            div.appendChild(desc);
 
-        const row = document.createElement('div');
-        row.className = 'images-row';
+            const row = document.createElement('div');
+            row.className = 'images-row';
 
-        const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
-        samples.forEach((num, i) => {
-            const imgWrapper = document.createElement('div');
-            imgWrapper.style.display = 'flex';
-            imgWrapper.style.flexDirection = 'column';
-            imgWrapper.style.alignItems = 'center';
+            const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
+            samples.forEach((num, i) => {
+                const imgWrapper = document.createElement('div');
+                imgWrapper.style.display = 'flex';
+                imgWrapper.style.flexDirection = 'column';
+                imgWrapper.style.alignItems = 'center';
 
-            const img = document.createElement('img');
-            img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
-            img.className = 'thumbnail';
-            img.alt = `샘플 ${num}`;
-            img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
-            imgWrapper.appendChild(img);
+                const img = document.createElement('img');
+                img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
+                img.className = 'thumbnail';
+                img.alt = `샘플 ${num}`;
+                img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
+                imgWrapper.appendChild(img);
 
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.min = 1;
-            input.max = 5;
-            input.placeholder = '순위';
-            input.className = 'rank-input';
-            input.name = `rank-${index}-${num}`;
-            input.style.marginTop = '4px';
-            input.style.width = '50px';
-            imgWrapper.appendChild(input);
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = 1;
+                input.max = 5;
+                input.placeholder = '순위';
+                input.className = 'rank-input';
+                input.name = `rank-${index}-${num}`;
+                input.style.marginTop = '4px';
+                input.style.width = '50px';
+                imgWrapper.appendChild(input);
 
-            row.appendChild(imgWrapper);
+                row.appendChild(imgWrapper);
+            });
+
+            div.appendChild(row);
+            container.appendChild(div);
+        });
+    }
+
+    function openPopup(src) {
+        document.getElementById('popup-img').src = src;
+        document.getElementById('popup').style.display = 'block';
+        document.querySelector('.overlay').style.display = 'block';
+    }
+
+    function closePopup() {
+        document.getElementById('popup').style.display = 'none';
+        document.querySelector('.overlay').style.display = 'none';
+    }
+
+    window.onload = () => {
+        renderSurvey();
+
+        // 제출 버튼 추가
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = '결과 다운로드 (JSON)';
+        submitBtn.style.marginTop = '40px';
+        submitBtn.style.padding = '10px 20px';
+        submitBtn.style.fontSize = '16px';
+        submitBtn.onclick = downloadSurveyData;
+        document.body.appendChild(submitBtn);
+    };
+
+    function downloadSurveyData() {
+        const surveyData = {
+            sessionId: Date.now().toString(),
+            answers: {}
+        };
+        const questionBlocks = document.querySelectorAll('.question');
+
+        questionBlocks.forEach((block, idx) => {
+            const qTitle = block.querySelector('h2').textContent;
+            const questionKey = qTitle.substring(qTitle.indexOf('.') + 2);
+            const inputs = block.querySelectorAll('.rank-input');
+            const answerList = Array.from(inputs)
+                .sort((a, b) => parseInt(a.value || 99) - parseInt(b.value || 99))
+                .map(input => input.name.split('-')[2]);
+            surveyData.answers[questionKey] = answerList;
         });
 
-        div.appendChild(row);
-        container.appendChild(div);
-    );
-}
+        const jsonData = JSON.stringify(surveyData, null, 2);
+        const filename = `survey_results_${surveyData.sessionId}.json`;
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
 
-        function openPopup(src) {
-            document.getElementById('popup-img').src = src;
-            document.getElementById('popup').style.display = 'block';
-            document.querySelector('.overlay').style.display = 'block';
-        }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-        function closePopup() {
-            document.getElementById('popup').style.display = 'none';
-            document.querySelector('.overlay').style.display = 'none';
-        }
-
-        window.onload = () => {
-    renderSurvey();
-
-    // 제출 버튼 추가
-    const submitBtn = document.createElement('button');
-    submitBtn.textContent = '설문 제출';
-    submitBtn.style.marginTop = '40px';
-    submitBtn.style.padding = '10px 20px';
-    submitBtn.style.fontSize = '16px';
-    submitBtn.onclick = submitSurvey;
-    document.body.appendChild(submitBtn);
-};
-    function submitSurvey() {
-    const surveyData = {
-        sessionId: Date.now().toString(),
-        answers: {}
-    };
-    const questionBlocks = document.querySelectorAll('.question');
-
-    questionBlocks.forEach((block, idx) => {
-        const qTitle = block.querySelector('h2').textContent;
-        const questionKey = qTitle.substring(qTitle.indexOf('.') + 2);
-        const thumbnails = Array.from(block.querySelectorAll('img'));
-        const inputs = block.querySelectorAll('.rank-input');
-        const answerList = Array.from(inputs)
-            .sort((a, b) => parseInt(a.value || 99) - parseInt(b.value || 99))
-            .map(input => input.name.split('-')[2])
-        surveyData.answers[questionKey] = answerList;
-    });
-
-    fetch("YOUR_GOOGLE_SCRIPT_WEBAPP_URL", {
-        method: "POST",
-        body: JSON.stringify(surveyData),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(res => res.text())
-    .then(msg => alert("제출이 완료되었습니다."))
-    .catch(err => alert("제출 오류: " + err));
-}
+        alert("설문 결과가 JSON 파일로 다운로드되었습니다.");
+    }
 </script>
 </body>
 </html>
