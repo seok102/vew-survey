@@ -70,61 +70,56 @@
             return array;
         }
 
-        function renderSurvey() {
-            const container = document.getElementById('survey');
-            container.innerHTML = '';
-            questions.forEach((q, index) => {
-  const container = document.getElementById('survey');
-  const div = document.createElement('div');
-  div.className = 'question';
+    function renderSurvey() {
+    const container = document.getElementById('survey');
+    container.innerHTML = '';
+    questions.forEach((q, index) => {
+        const div = document.createElement('div');
+        div.className = 'question';
 
-  const title = document.createElement('h2');
-  title.textContent = `Q${index + 1}. ${q.title}`;
-  div.appendChild(title);
+        const title = document.createElement('h2');
+        title.textContent = `Q${index + 1}. ${q.title}`;
+        div.appendChild(title);
 
-  const desc = document.createElement('p');
-  desc.textContent = q.description;
-  div.appendChild(desc);
+        const desc = document.createElement('p');
+        desc.textContent = q.description;
+        div.appendChild(desc);
 
-  const row = document.createElement('div');
-  row.className = 'images-row';
+        const row = document.createElement('div');
+        row.className = 'images-row';
 
-  const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
-  samples.forEach((num, i) => {
-    const imgWrapper = document.createElement('div');
-    imgWrapper.style.display = 'flex';
-    imgWrapper.style.flexDirection = 'column';
-    imgWrapper.style.alignItems = 'center';
+        const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
+        samples.forEach((num, i) => {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.style.display = 'flex';
+            imgWrapper.style.flexDirection = 'column';
+            imgWrapper.style.alignItems = 'center';
 
-    const img = document.createElement('img');
-    img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
-    img.className = 'thumbnail';
-    img.alt = `샘플 ${num}`;
-    img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
-    imgWrapper.appendChild(img);
+            const img = document.createElement('img');
+            img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
+            img.className = 'thumbnail';
+            img.alt = `샘플 ${num}`;
+            img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
+            imgWrapper.appendChild(img);
 
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.min = 1;
-    input.max = 5;
-    input.placeholder = '순위';
-    input.className = 'rank-input';
-    input.name = `rank-${index}-${num}`;
-    input.style.marginTop = '4px';
-    input.style.width = '50px';
-    imgWrapper.appendChild(input);
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = 1;
+            input.max = 5;
+            input.placeholder = '순위';
+            input.className = 'rank-input';
+            input.name = `rank-${index}-${num}`;
+            input.style.marginTop = '4px';
+            input.style.width = '50px';
+            imgWrapper.appendChild(input);
 
-    row.appendChild(imgWrapper);
-  });
+            row.appendChild(imgWrapper);
+        });
 
-  div.appendChild(row);
-  container.appendChild(div);
-});
-
-    div.appendChild(row);
+        div.appendChild(row);
+        container.appendChild(div);
     });
-            });
-        }
+}
 
         function openPopup(src) {
             document.getElementById('popup-img').src = src;
