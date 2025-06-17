@@ -220,15 +220,19 @@
             border-radius: 12px;
             padding: 20px;
             z-index: 1001;
-            max-width: 90vw;
-            max-height: 90vh;
+            max-width: 95vw;
+            max-height: 95vh;
             box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
         
         .popup img {
             max-width: 100%;
-            max-height: 70vh;
+            max-height: 80vh;
             border-radius: 8px;
+            object-fit: contain;
+            min-width: 320px;
+            min-height: 240px;
         }
         
         .popup-close {
@@ -320,6 +324,35 @@
                 gap: 15px;
             }
             .thumbnail { width: 100px; height: 75px; }
+            
+            /* 모바일 팝업 크기 개선 */
+            .popup {
+                padding: 15px;
+                max-width: 98vw;
+                max-height: 98vh;
+                border-radius: 8px;
+            }
+            
+            .popup img {
+                min-width: 280px;
+                min-height: 210px;
+                max-height: 85vh;
+                width: auto;
+                height: auto;
+            }
+            
+            .popup-close {
+                top: 5px;
+                right: 10px;
+                font-size: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .popup img {
+                min-width: 300px;
+                min-height: 225px;
+            }
         }
     </style>
 </head>
@@ -367,8 +400,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-        // EmailJS 초기화 (실제 사용시 본인의 Public Key로 변경)
-        // emailjs.init("YOUR_PUBLIC_KEY");
+        // EmailJS 초기화
+        emailjs.init("f3-fPmJ7cP5TXmW7w"); // Public Key 설정됨
         
         const questions = [
             {
@@ -636,28 +669,28 @@
         function submitSurveyByEmail() {
             const surveyData = prepareSurveyData();
             
-            // EmailJS 설정이 되어있지 않은 경우의 예시
-            if (typeof emailjs === 'undefined') {
-                alert('이메일 전송 기능이 설정되지 않았습니다.\n관리자에게 문의하거나 파일 다운로드를 이용해주세요.');
-                return;
-            }
-            
             const emailBtn = document.getElementById('email-btn');
             emailBtn.textContent = '📤 전송 중...';
             emailBtn.disabled = true;
             
-            // EmailJS로 전송 (실제 사용시 서비스ID, 템플릿ID 설정 필요)
-            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+            // seokyeol@gmail.com으로 전송
+            emailjs.send('service_g8qk7mj', 'template_survey_results', {
+                to_email: 'seokyeol@gmail.com',
                 survey_data: JSON.stringify(surveyData, null, 2),
                 session_id: surveyData.sessionId,
                 timestamp: new Date().toLocaleString('ko-KR'),
-                total_questions: questions.length
+                total_questions: questions.length,
+                participant_info: `세션: ${surveyData.sessionId}\n브라우저: ${navigator.userAgent.split(')')[0]})`
             }).then(function(response) {
                 alert('설문 결과가 성공적으로 전송되었습니다!\n참여해주셔서 감사합니다.');
                 emailBtn.textContent = '✅ 전송 완료';
                 emailBtn.style.background = '#28a745';
+                
+                // 전송 완료 후 다운로드도 비활성화 (중복 제출 방지)
+                document.getElementById('download-btn').disabled = true;
+                document.getElementById('download-btn').textContent = '제출 완료';
             }).catch(function(error) {
-                alert('전송 중 오류가 발생했습니다.\n파일 다운로드를 이용해주세요.');
+                alert('전송 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 파일 다운로드를 이용해주세요.');
                 emailBtn.textContent = '📧 이메일로 제출하기';
                 emailBtn.disabled = false;
                 console.error('Email send failed:', error);
