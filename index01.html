@@ -434,15 +434,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-        // EmailJS 초기화 및 설정 확인
-        (function() {
-            try {
-                emailjs.init("jW7AvOKLdjq5h4Rxt");
-                console.log('EmailJS initialized successfully');
-            } catch (error) {
-                console.error('EmailJS initialization failed:', error);
-            }
-        })();
+        // EmailJS 초기화
+        emailjs.init("jW7AvOKLdjq5h4Rxt");
 
         const questions = [
             {
@@ -642,15 +635,9 @@
                 }
             });
 
-            const uniqueValues = [...new Set(selectedValues)];
-            const hasDuplicates = selectedValues.length !== uniqueValues.length;
-
             if (completedCount === 0) {
                 validationDiv.textContent = '';
                 validationDiv.className = 'validation-message';
-            } else if (hasDuplicates) {
-                validationDiv.textContent = '⚠️ 중복된 점수가 있습니다. (시스템 오류: 관리자에게 문의)';
-                validationDiv.className = 'validation-message error';
             } else if (completedCount < showPerQuestion) {
                 validationDiv.textContent = `📝 ${completedCount}/${showPerQuestion}개 완료. 모든 그래프에 점수를 선택해주세요.`;
                 validationDiv.className = 'validation-message';
@@ -771,19 +758,6 @@
             emailBtn.textContent = '📤 전송 중...';
             emailBtn.disabled = true;
 
-            console.log('Attempting to send email with data:', {
-                sessionId: surveyData.sessionId,
-                answerCount: Object.keys(surveyData.answers).length
-            });
-
-            if (typeof emailjs === 'undefined') {
-                console.error('EmailJS not loaded');
-                alert('이메일 서비스가 로드되지 않았습니다. 페이지를 새로고침해주세요.');
-                emailBtn.textContent = '📧 이메일로 제출하기';
-                emailBtn.disabled = false;
-                return;
-            }
-
             emailjs.send('service_ckupoo2', 'template_dk57k3c', {
                 to_email: 'seokyeol@gmail.com',
                 session_id: surveyData.sessionId,
@@ -792,7 +766,6 @@
                 survey_data: JSON.stringify(surveyData, null, 2),
                 participant_info: `세션: ${surveyData.sessionId}\n완료시간: ${new Date().toLocaleString('ko-KR')}`
             }).then(function(response) {
-                console.log('Email sent successfully:', response);
                 alert('설문 결과가 성공적으로 전송되었습니다!\n참여해주셔서 감사합니다.');
                 emailBtn.textContent = '✅ 전송 완료';
                 emailBtn.style.background = '#28a745';
@@ -804,12 +777,44 @@
                 }
             }).catch(function(error) {
                 console.error('Email send failed:', error);
-                
-                let errorMessage = '전송 중 오류가 발생했습니다.';
-                if (error.text) {
-                    errorMessage += `\n오류 내용: ${error.text}`;
-                }
-                errorMessage += '\n\n파일 다운로드를 이용해주세요.';
-                
-                alert(errorMessage);
-                email
+                alert('전송 중 오류가 발생했습니다.\n파일 다운로드를 이용해주세요.');
+                emailBtn.textContent = '📧 이메일로 제출하기';
+                emailBtn.disabled = false;
+            });
+        }
+
+        function downloadSurveyData() {
+            const surveyData = prepareSurveyData();
+
+            const jsonData = JSON.stringify(surveyData, null, 2);
+            const filename = `infoviz_survey_${surveyData.sessionId}.json`;
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert("설문 결과가 성공적으로 다운로드되었습니다!\n파일명: " + filename);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePopup();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderSurvey();
+            questions.forEach((_, index) => {
+                updateRadioDisabledStates(index);
+            });
+            updateProgress();
+        });
+    </script>
+</body>
+</html>
