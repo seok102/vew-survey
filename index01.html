@@ -767,9 +767,27 @@
             }
         });
 
-        window.onload = () => {
+        // DOM이 완전히 로드된 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
             renderSurvey();
-            updateProgress();
+            // 초기 진행률 업데이트는 지연시켜서 모든 요소가 생성된 후 실행
+            setTimeout(() => {
+                console.log('Initial progress update');
+                updateProgress();
+            }, 100);
+        });
+
+        // 백업으로 window.onload도 유지
+        window.onload = () => {
+            console.log('Window loaded');
+            // DOM이 이미 렌더링되었는지 확인
+            if (!document.getElementById('survey').hasChildNodes()) {
+                renderSurvey();
+                setTimeout(() => {
+                    updateProgress();
+                }, 100);
+            }
         };
     </script>
 </body>
