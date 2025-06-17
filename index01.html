@@ -487,6 +487,7 @@
                     <strong>📋 평가 방법:</strong><br>
                     • 이미지를 클릭하면 큰 화면으로 볼 수 있습니다<br>
                     • 각 그래프에 대해 1점(가장 우수)부터 5점(가장 미흡)까지 점수를 선택해주세요<br>
+                    • <strong>중복된 점수는 선택할 수 없습니다</strong> (1점, 2점, 3점, 4점, 5점 각각 한 번씩만)<br>
                     • 모든 그래프를 평가해야 다음 단계로 진행할 수 있습니다
                 `;
                 div.appendChild(instruction);
@@ -561,6 +562,15 @@
 
                 container.appendChild(div);
             });
+            
+            console.log('Survey rendered, checking if submit buttons exist...');
+            // 설문이 렌더링된 후 버튼들이 존재하는지 확인
+            const emailBtn = document.getElementById('email-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            console.log('Submit buttons after render:', {
+                emailBtn: !!emailBtn,
+                downloadBtn: !!downloadBtn
+            });
         }
 
         function validateQuestion(questionIndex) {
@@ -572,6 +582,8 @@
             console.log(`Found ${imageItems.length} image items`);
             
             let completedCount = 0;
+            let selectedValues = [];
+            let hasDuplicates = false;
             
             // 각 이미지 아이템별로 라디오 버튼 선택 확인
             imageItems.forEach((imageItem, idx) => {
@@ -579,30 +591,40 @@
                 console.log(`Image item ${idx}: found ${radios.length} radios`);
                 
                 let isSelected = false;
+                let selectedValue = null;
                 
                 radios.forEach(radio => {
                     console.log(`Radio ${radio.name} = ${radio.value}, checked: ${radio.checked}`);
                     if (radio.checked) {
                         isSelected = true;
+                        selectedValue = parseInt(radio.value);
                     }
                 });
                 
                 if (isSelected) {
                     completedCount++;
+                    selectedValues.push(selectedValue);
                     imageItem.classList.add('selected');
-                    console.log(`Image item ${idx} is selected`);
+                    console.log(`Image item ${idx} is selected with value ${selectedValue}`);
                 } else {
                     imageItem.classList.remove('selected');
                     console.log(`Image item ${idx} is NOT selected`);
                 }
             });
             
-            console.log(`Question ${questionIndex}: ${completedCount}/5 completed`);
+            // 중복 값 확인
+            const uniqueValues = [...new Set(selectedValues)];
+            hasDuplicates = selectedValues.length !== uniqueValues.length;
+            
+            console.log(`Question ${questionIndex}: ${completedCount}/5 completed, selectedValues: [${selectedValues}], duplicates: ${hasDuplicates}`);
             
             // 검증 메시지 업데이트
             if (completedCount === 0) {
                 validationDiv.textContent = '';
                 validationDiv.className = 'validation-message';
+            } else if (hasDuplicates) {
+                validationDiv.textContent = '⚠️ 중복된 점수가 있습니다. 각 그래프마다 다른 점수를 선택해주세요.';
+                validationDiv.className = 'validation-message error';
             } else if (completedCount !== 5) {
                 validationDiv.textContent = `📝 ${completedCount}/5개 완료. 모든 그래프에 점수를 선택해주세요.`;
                 validationDiv.className = 'validation-message';
@@ -771,11 +793,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded');
             renderSurvey();
-            // 초기 진행률 업데이트는 지연시켜서 모든 요소가 생성된 후 실행
-            setTimeout(() => {
-                console.log('Initial progress update');
-                updateProgress();
-            }, 100);
+            
+            // 버튼들이 HTML에 이미 존재하는지 확인
+            console.log('Checking submit buttons after DOM load...');
+            const emailBtn = document.getElementById('email-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            console.log('Submit buttons on DOM load:', {
+                emailBtn: !!emailBtn,
+                downloadBtn: !!downloadBtn
+            });
+            
+            // 초기 진행률 업데이트는 조건부로 실행
+            if (emailBtn && downloadBtn) {
+                setTimeout(() => {
+                    console.log('Initial progress update');
+                    updateProgress();
+                }, 100);
+            } else {
+                console.log('Submit buttons not found, skipping initial progress update');
+            }
         });
 
         // 백업으로 window.onload도 유지
@@ -784,6 +820,12 @@
             // DOM이 이미 렌더링되었는지 확인
             if (!document.getElementById('survey').hasChildNodes()) {
                 renderSurvey();
+            }
+            
+            // 버튼이 존재할 때만 진행률 업데이트
+            const emailBtn = document.getElementById('email-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            if (emailBtn && downloadBtn) {
                 setTimeout(() => {
                     updateProgress();
                 }, 100);
