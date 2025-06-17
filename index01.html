@@ -564,18 +564,24 @@
         }
 
         function validateQuestion(questionIndex) {
+            console.log(`Validating question ${questionIndex}`);
             const questionDiv = document.getElementById(`question-${questionIndex}`);
             const imageItems = questionDiv.querySelectorAll('.image-item');
             const validationDiv = document.getElementById(`validation-${questionIndex}`);
+            
+            console.log(`Found ${imageItems.length} image items`);
             
             let completedCount = 0;
             
             // 각 이미지 아이템별로 라디오 버튼 선택 확인
             imageItems.forEach((imageItem, idx) => {
-                const radios = imageItem.querySelectorAll('.rank-radio');
+                const radios = imageItem.querySelectorAll('input[type="radio"]');
+                console.log(`Image item ${idx}: found ${radios.length} radios`);
+                
                 let isSelected = false;
                 
                 radios.forEach(radio => {
+                    console.log(`Radio ${radio.name} = ${radio.value}, checked: ${radio.checked}`);
                     if (radio.checked) {
                         isSelected = true;
                     }
@@ -584,10 +590,14 @@
                 if (isSelected) {
                     completedCount++;
                     imageItem.classList.add('selected');
+                    console.log(`Image item ${idx} is selected`);
                 } else {
                     imageItem.classList.remove('selected');
+                    console.log(`Image item ${idx} is NOT selected`);
                 }
             });
+            
+            console.log(`Question ${questionIndex}: ${completedCount}/5 completed`);
             
             // 검증 메시지 업데이트
             if (completedCount === 0) {
