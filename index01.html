@@ -414,7 +414,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
       // EmailJS 초기화
-        emailjs.init("f3-fPmJ7cP5TXmW7w"); // Public Key 설정됨
+        emailjs.init("jW7AvOKLdjq5h4Rxt"); // Public Key 설정됨
 
         const questions = [
             {
@@ -759,7 +759,7 @@
             emailBtn.textContent = '📤 전송 중...';
             emailBtn.disabled = true;
 
-            emailjs.send('service_g8qk7mj', 'template_survey_results', {
+            emailjs.send('service_ckupoo2', 'template_survey_results', {
                 to_email: 'seokyeol@gmail.com',
                 survey_data: JSON.stringify(surveyData, null, 2),
                 session_id: surveyData.sessionId,
