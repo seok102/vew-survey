@@ -485,10 +485,20 @@
         }
 
         function renderSurvey() {
+            console.log('Starting renderSurvey function...');
+            
             const container = document.getElementById('survey');
+            if (!container) {
+                console.error('Survey container not found in renderSurvey!');
+                return;
+            }
+            
             container.innerHTML = '';
+            console.log(`Rendering ${questions.length} questions...`);
 
             questions.forEach((q, index) => {
+                console.log(`Rendering question ${index + 1}: ${q.title}`);
+                
                 const div = document.createElement('div');
                 div.className = 'question';
                 div.id = `question-${index}`;
@@ -516,6 +526,8 @@
                 grid.className = 'images-grid';
 
                 const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
+                console.log(`Question ${index + 1} samples:`, samples);
+                
                 samples.forEach((num, i) => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'image-item';
@@ -526,6 +538,17 @@
                     img.className = 'thumbnail';
                     img.alt = `샘플 ${num}`;
                     img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
+                    
+                    // 이미지 로드 에러 처리
+                    img.onerror = function() {
+                        console.warn(`Image not found: ${this.src}`);
+                        this.style.background = '#f0f0f0';
+                        this.style.display = 'flex';
+                        this.style.alignItems = 'center';
+                        this.style.justifyContent = 'center';
+                        this.innerHTML = '이미지 없음';
+                    };
+                    
                     itemDiv.appendChild(img);
 
                     const rankContainer = document.createElement('div');
@@ -580,7 +603,10 @@
                 div.appendChild(validationDiv);
 
                 container.appendChild(div);
+                console.log(`Question ${index + 1} rendered successfully`);
             });
+            
+            console.log('All questions rendered successfully');
         }
 
         function handleRadioChange(event, questionIndex) {
@@ -809,11 +835,49 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            renderSurvey();
-            questions.forEach((_, index) => {
-                updateRadioDisabledStates(index);
+            console.log('DOM loaded, starting survey render...');
+            
+            // 기본 요소들이 존재하는지 확인
+            const surveyContainer = document.getElementById('survey');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progress-text');
+            
+            console.log('Elements found:', {
+                surveyContainer: !!surveyContainer,
+                progressFill: !!progressFill,
+                progressText: !!progressText
             });
-            updateProgress();
+            
+            if (!surveyContainer) {
+                console.error('Survey container not found!');
+                return;
+            }
+            
+            try {
+                renderSurvey();
+                console.log('Survey rendered successfully');
+                
+                questions.forEach((_, index) => {
+                    updateRadioDisabledStates(index);
+                });
+                
+                updateProgress();
+                console.log('Initial setup completed');
+                
+            } catch (error) {
+                console.error('Error during survey initialization:', error);
+                
+                // 오류 발생 시 간단한 메시지 표시
+                surveyContainer.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: #dc3545;">
+                        <h3>설문 로드 중 오류가 발생했습니다</h3>
+                        <p>페이지를 새로고침해주세요.</p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            새로고침
+                        </button>
+                    </div>
+                `;
+            }
         });
     </script>
 </body>
