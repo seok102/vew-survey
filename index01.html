@@ -565,27 +565,24 @@
 
         function validateQuestion(questionIndex) {
             const questionDiv = document.getElementById(`question-${questionIndex}`);
-            const radioGroups = questionDiv.querySelectorAll('.rank-options');
-            const validationDiv = document.getElementById(`validation-${questionIndex}`);
             const imageItems = questionDiv.querySelectorAll('.image-item');
+            const validationDiv = document.getElementById(`validation-${questionIndex}`);
             
             let completedCount = 0;
             
-            // 각 그래프별로 라디오 버튼 선택 확인
-            radioGroups.forEach((group, idx) => {
-                const radios = group.querySelectorAll('.rank-radio');
-                const imageItem = imageItems[idx];
+            // 각 이미지 아이템별로 라디오 버튼 선택 확인
+            imageItems.forEach((imageItem, idx) => {
+                const radios = imageItem.querySelectorAll('.rank-radio');
                 let isSelected = false;
                 
                 radios.forEach(radio => {
                     if (radio.checked) {
                         isSelected = true;
-                        completedCount++;
                     }
                 });
                 
-                // 시각적 피드백
                 if (isSelected) {
+                    completedCount++;
                     imageItem.classList.add('selected');
                 } else {
                     imageItem.classList.remove('selected');
@@ -675,11 +672,11 @@
 
             questions.forEach((q, idx) => {
                 const questionDiv = document.getElementById(`question-${idx}`);
-                const radioGroups = questionDiv.querySelectorAll('.rank-options');
+                const imageItems = questionDiv.querySelectorAll('.image-item');
                 const scores = {};
                 
-                radioGroups.forEach((group, groupIdx) => {
-                    const radios = group.querySelectorAll('.rank-radio');
+                imageItems.forEach((imageItem, imgIdx) => {
+                    const radios = imageItem.querySelectorAll('.rank-radio');
                     const sampleNum = radios[0].name.split('-')[2]; // 샘플 번호 추출
                     
                     radios.forEach(radio => {
