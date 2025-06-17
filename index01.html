@@ -327,4 +327,489 @@
         
         .completion-status {
             margin-top: 20px;
-            font-size: 0
+            font-size: 0.95em;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .header { padding: 20px; }
+            .header h1 { font-size: 1.8em; }
+            .content { padding: 20px; }
+            .question { padding: 20px; }
+            .images-grid { 
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            .thumbnail { width: 100px; height: 75px; }
+            
+            .popup {
+                padding: 15px;
+                max-width: 98vw;
+                max-height: 98vh;
+                border-radius: 8px;
+            }
+            
+            .popup img {
+                min-width: 280px;
+                min-height: 210px;
+                max-height: 85vh;
+                width: auto;
+                height: auto;
+            }
+            
+            .popup-close {
+                top: 5px;
+                right: 10px;
+                font-size: 20px;
+            }
+            
+            .rank-options {
+                gap: 6px;
+            }
+            
+            .rank-radio {
+                width: 16px;
+                height: 16px;
+            }
+            
+            .rank-number {
+                font-size: 0.75em;
+            }
+            
+            .rank-text {
+                font-size: 0.65em;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .popup img {
+                min-width: 300px;
+                min-height: 225px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>정보 시각화 사용자 평가 설문</h1>
+            <p>각 평가 항목별로 5개의 그래프를 확인하고, 1점(가장 우수)부터 5점(가장 미흡)까지 점수를 매겨주세요.</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-text" id="progress-text">진행률: 0% (0/8 완료)</div>
+        </div>
+        
+        <div class="content">
+            <div id="survey"></div>
+            
+            <div class="submit-container">
+                <div class="completion-status" id="completion-status">
+                    모든 질문에 답변해주시면 결과를 제출할 수 있습니다.
+                </div>
+                <div class="submit-options">
+                    <button class="submit-btn" id="email-btn" onclick="submitSurveyByEmail()" disabled>
+                        📧 이메일로 제출하기
+                    </button>
+                    <button class="submit-btn" id="download-btn" onclick="downloadSurveyData()" disabled>
+                        💾 파일 다운로드
+                    </button>
+                </div>
+                <div style="margin-top: 15px; font-size: 0.9em; color: #6c757d;">
+                    이메일 제출 시 결과가 자동으로 연구팀에게 전송됩니다
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" onclick="closePopup()"></div>
+    <div class="popup" id="popup">
+        <button class="popup-close" onclick="closePopup()">&times;</button>
+        <img id="popup-img" src="" alt="">
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // EmailJS 초기화 및 설정 확인
+        (function() {
+            try {
+                emailjs.init("jW7AvOKLdjq5h4Rxt");
+                console.log('EmailJS initialized successfully');
+            } catch (error) {
+                console.error('EmailJS initialization failed:', error);
+            }
+        })();
+
+        const questions = [
+            {
+                title: "정보 밀도 (Information Density)",
+                description: "가장 적절한 정보량(너무 단순하지도 복잡하지도 않은)을 가진 그래프를 평가해주세요."
+            },
+            {
+                title: "정확성 (Accuracy)",
+                description: "데이터를 가장 정확하게 표현하고 있는 그래프를 평가해주세요."
+            },
+            {
+                title: "색상 효과성 (Color Effectiveness)",
+                description: "색상이 가장 효과적으로 정보를 구분하고 전달하는 그래프를 평가해주세요."
+            },
+            {
+                title: "글자 적합성 (Typographic Suitability)",
+                description: "텍스트의 글꼴, 크기, 스타일이 가장 적합한 그래프를 평가해주세요."
+            },
+            {
+                title: "색상 적절성 (Color Appropriateness)",
+                description: "전체적인 색상 선택과 조합이 가장 적절한 그래프를 평가해주세요."
+            },
+            {
+                title: "대비 가독성 (Contrast Readability)",
+                description: "텍스트와 요소들이 배경과 가장 잘 구분되어 읽기 쉬운 그래프를 평가해주세요."
+            },
+            {
+                title: "텍스트 인식 품질 (Text Recognition Quality)",
+                description: "텍스트가 가장 뚜렷하고 명확하게 인식되는 그래프를 평가해주세요."
+            },
+            {
+                title: "텍스트 위치 구조 (Text Position Structure)",
+                description: "텍스트가 가장 논리적이고 적절한 위치에 배치된 그래프를 평가해주세요."
+            }
+        ];
+
+        const sampleCount = 30;
+        const showPerQuestion = 5;
+
+        function shuffle(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function renderSurvey() {
+            const container = document.getElementById('survey');
+            container.innerHTML = '';
+
+            questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question';
+                div.id = `question-${index}`;
+
+                const title = document.createElement('h2');
+                title.textContent = `Q${index + 1}. ${q.title}`;
+                div.appendChild(title);
+
+                const desc = document.createElement('p');
+                desc.textContent = q.description;
+                div.appendChild(desc);
+
+                const instruction = document.createElement('div');
+                instruction.className = 'instruction';
+                instruction.innerHTML = `
+                    <strong>📋 평가 방법:</strong><br>
+                    • 이미지를 클릭하면 큰 화면으로 볼 수 있습니다<br>
+                    • 각 그래프에 대해 1점(가장 우수)부터 5점(가장 미흡)까지 점수를 선택해주세요<br>
+                    • <strong>중복된 점수는 선택할 수 없습니다</strong> (1점, 2점, 3점, 4점, 5점 각각 한 번씩만)<br>
+                    • 모든 그래프를 평가해야 다음 단계로 진행할 수 있습니다
+                `;
+                div.appendChild(instruction);
+
+                const grid = document.createElement('div');
+                grid.className = 'images-grid';
+
+                const samples = shuffle(Array.from({length: sampleCount}, (_, i) => i + 1)).slice(0, showPerQuestion);
+                samples.forEach((num, i) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'image-item';
+                    itemDiv.dataset.sample = num;
+
+                    const img = document.createElement('img');
+                    img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
+                    img.className = 'thumbnail';
+                    img.alt = `샘플 ${num}`;
+                    img.onclick = () => openPopup(`images/sample${num.toString().padStart(2, '0')}.png`);
+                    itemDiv.appendChild(img);
+
+                    const rankContainer = document.createElement('div');
+                    rankContainer.className = 'rank-container';
+
+                    const label = document.createElement('div');
+                    label.className = 'rank-label';
+                    label.textContent = '점수 선택';
+                    rankContainer.appendChild(label);
+
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'rank-options';
+
+                    for (let score = 1; score <= 5; score++) {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'rank-option';
+
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = `rank-${index}-item-${num}`;
+                        radio.value = score;
+                        radio.className = 'rank-radio';
+                        radio.addEventListener('change', (event) => handleRadioChange(event, index));
+                        optionDiv.appendChild(radio);
+
+                        const numberLabel = document.createElement('div');
+                        numberLabel.className = 'rank-number';
+                        numberLabel.textContent = score;
+                        optionDiv.appendChild(numberLabel);
+
+                        const textLabel = document.createElement('div');
+                        textLabel.className = 'rank-text';
+                        textLabel.textContent = score === 1 ? '최고' :
+                                              score === 2 ? '좋음' :
+                                              score === 3 ? '보통' :
+                                              score === 4 ? '미흡' : '최저';
+                        optionDiv.appendChild(textLabel);
+
+                        optionsContainer.appendChild(optionDiv);
+                    }
+
+                    rankContainer.appendChild(optionsContainer);
+                    itemDiv.appendChild(rankContainer);
+                    grid.appendChild(itemDiv);
+                });
+
+                div.appendChild(grid);
+
+                const validationDiv = document.createElement('div');
+                validationDiv.className = 'validation-message';
+                validationDiv.id = `validation-${index}`;
+                div.appendChild(validationDiv);
+
+                container.appendChild(div);
+            });
+        }
+
+        function handleRadioChange(event, questionIndex) {
+            updateRadioDisabledStates(questionIndex);
+            validateQuestion(questionIndex);
+        }
+
+        function updateRadioDisabledStates(questionIndex) {
+            const questionDiv = document.getElementById(`question-${questionIndex}`);
+            const allRadiosInQuestion = questionDiv.querySelectorAll('.rank-radio');
+            const imageItems = questionDiv.querySelectorAll('.image-item');
+            const selectedScoresInQuestion = new Set();
+
+            imageItems.forEach(item => {
+                const checkedRadio = item.querySelector('.rank-radio:checked');
+                if (checkedRadio) {
+                    selectedScoresInQuestion.add(parseInt(checkedRadio.value));
+                }
+            });
+
+            allRadiosInQuestion.forEach(radio => {
+                const currentRadioScore = parseInt(radio.value);
+                const parentItem = radio.closest('.image-item');
+                const ownCheckedRadio = parentItem.querySelector('.rank-radio:checked');
+
+                if (ownCheckedRadio && ownCheckedRadio === radio) {
+                    radio.disabled = false;
+                } else if (selectedScoresInQuestion.has(currentRadioScore)) {
+                    radio.disabled = true;
+                } else {
+                    radio.disabled = false;
+                }
+            });
+        }
+
+        function validateQuestion(questionIndex) {
+            const questionDiv = document.getElementById(`question-${questionIndex}`);
+            const imageItems = questionDiv.querySelectorAll('.image-item');
+            const validationDiv = document.getElementById(`validation-${questionIndex}`);
+
+            let completedCount = 0;
+            const selectedValues = [];
+
+            imageItems.forEach(imageItem => {
+                const checkedRadio = imageItem.querySelector('input[type="radio"]:checked');
+                if (checkedRadio) {
+                    completedCount++;
+                    selectedValues.push(parseInt(checkedRadio.value));
+                    imageItem.classList.add('selected');
+                } else {
+                    imageItem.classList.remove('selected');
+                }
+            });
+
+            const uniqueValues = [...new Set(selectedValues)];
+            const hasDuplicates = selectedValues.length !== uniqueValues.length;
+
+            if (completedCount === 0) {
+                validationDiv.textContent = '';
+                validationDiv.className = 'validation-message';
+            } else if (hasDuplicates) {
+                validationDiv.textContent = '⚠️ 중복된 점수가 있습니다. (시스템 오류: 관리자에게 문의)';
+                validationDiv.className = 'validation-message error';
+            } else if (completedCount < showPerQuestion) {
+                validationDiv.textContent = `📝 ${completedCount}/${showPerQuestion}개 완료. 모든 그래프에 점수를 선택해주세요.`;
+                validationDiv.className = 'validation-message';
+            } else {
+                validationDiv.textContent = '✅ 완료되었습니다!';
+                validationDiv.className = 'validation-message success';
+            }
+            updateProgress();
+        }
+
+        function updateProgress() {
+            let completedQuestionsCount = 0;
+
+            questions.forEach((_, index) => {
+                const questionDiv = document.getElementById(`question-${index}`);
+                const imageItems = questionDiv.querySelectorAll('.image-item');
+                let scoresInThisQuestion = [];
+                let allImagesRated = true;
+
+                imageItems.forEach(item => {
+                    const checkedRadio = item.querySelector('.rank-radio:checked');
+                    if (checkedRadio) {
+                        scoresInThisQuestion.push(parseInt(checkedRadio.value));
+                    } else {
+                        allImagesRated = false;
+                    }
+                });
+
+                const uniqueScores = [...new Set(scoresInThisQuestion)];
+                if (allImagesRated && uniqueScores.length === showPerQuestion) {
+                    completedQuestionsCount++;
+                }
+            });
+
+            const progressPercent = Math.round((completedQuestionsCount / questions.length) * 100);
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').textContent =
+                `진행률: ${progressPercent}% (${completedQuestionsCount}/${questions.length} 완료)`;
+
+            const emailBtn = document.getElementById('email-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const completionStatus = document.getElementById('completion-status');
+
+            if (completedQuestionsCount === questions.length) {
+                if(emailBtn) emailBtn.disabled = false;
+                if(downloadBtn) downloadBtn.disabled = false;
+                if(completionStatus) {
+                    completionStatus.textContent = '🎉 모든 질문이 완료되었습니다! 결과를 제출해주세요.';
+                    completionStatus.style.color = '#28a745';
+                }
+            } else {
+                if(emailBtn) emailBtn.disabled = true;
+                if(downloadBtn) downloadBtn.disabled = true;
+                if(completionStatus) {
+                    completionStatus.textContent =
+                        `${questions.length - completedQuestionsCount}개의 질문이 남아있습니다. 모든 질문에 답변해주세요.`;
+                    completionStatus.style.color = '#6c757d';
+                }
+            }
+        }
+
+        function openPopup(src) {
+            document.getElementById('popup-img').src = src;
+            document.getElementById('popup').style.display = 'block';
+            document.querySelector('.overlay').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function prepareSurveyData() {
+            const surveyData = {
+                sessionId: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                answers: {},
+                metadata: {
+                    totalQuestions: questions.length,
+                    samplesPerQuestion: showPerQuestion,
+                    completed: true
+                }
+            };
+
+            questions.forEach((q, idx) => {
+                const questionDiv = document.getElementById(`question-${idx}`);
+                const imageItems = questionDiv.querySelectorAll('.image-item');
+                const scores = {};
+
+                imageItems.forEach((imageItem) => {
+                    const sampleNum = imageItem.dataset.sample;
+                    const checkedRadio = imageItem.querySelector('.rank-radio:checked');
+                    if (checkedRadio) {
+                        scores[`sample${sampleNum.toString().padStart(2, '0')}`] = parseInt(checkedRadio.value);
+                    }
+                });
+
+                const sortedSamples = Object.entries(scores)
+                    .sort(([,a], [,b]) => a - b)
+                    .map(([sample,]) => sample);
+
+                surveyData.answers[q.title] = {
+                    scores: scores,
+                    rankedSamples: sortedSamples
+                };
+            });
+
+            return surveyData;
+        }
+
+        function submitSurveyByEmail() {
+            const surveyData = prepareSurveyData();
+
+            const emailBtn = document.getElementById('email-btn');
+            emailBtn.textContent = '📤 전송 중...';
+            emailBtn.disabled = true;
+
+            console.log('Attempting to send email with data:', {
+                sessionId: surveyData.sessionId,
+                answerCount: Object.keys(surveyData.answers).length
+            });
+
+            if (typeof emailjs === 'undefined') {
+                console.error('EmailJS not loaded');
+                alert('이메일 서비스가 로드되지 않았습니다. 페이지를 새로고침해주세요.');
+                emailBtn.textContent = '📧 이메일로 제출하기';
+                emailBtn.disabled = false;
+                return;
+            }
+
+            emailjs.send('service_ckupoo2', 'template_dk57k3c', {
+                to_email: 'seokyeol@gmail.com',
+                session_id: surveyData.sessionId,
+                timestamp: new Date().toLocaleString('ko-KR'),
+                total_questions: questions.length,
+                survey_data: JSON.stringify(surveyData, null, 2),
+                participant_info: `세션: ${surveyData.sessionId}\n완료시간: ${new Date().toLocaleString('ko-KR')}`
+            }).then(function(response) {
+                console.log('Email sent successfully:', response);
+                alert('설문 결과가 성공적으로 전송되었습니다!\n참여해주셔서 감사합니다.');
+                emailBtn.textContent = '✅ 전송 완료';
+                emailBtn.style.background = '#28a745';
+                
+                const downloadBtn = document.getElementById('download-btn');
+                if (downloadBtn) {
+                    downloadBtn.disabled = true;
+                    downloadBtn.textContent = '제출 완료';
+                }
+            }).catch(function(error) {
+                console.error('Email send failed:', error);
+                
+                let errorMessage = '전송 중 오류가 발생했습니다.';
+                if (error.text) {
+                    errorMessage += `\n오류 내용: ${error.text}`;
+                }
+                errorMessage += '\n\n파일 다운로드를 이용해주세요.';
+                
+                alert(errorMessage);
+                email
