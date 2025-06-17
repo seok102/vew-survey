@@ -163,31 +163,44 @@
             font-weight: 500;
         }
         
-        .rank-input {
-            width: 60px;
-            height: 40px;
+        .rank-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .rank-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .rank-radio {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #4facfe;
+        }
+        
+        .rank-radio:checked {
+            transform: scale(1.1);
+        }
+        
+        .rank-number {
+            font-size: 0.8em;
+            color: #6c757d;
+            font-weight: 500;
+            min-width: 20px;
             text-align: center;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s ease;
         }
         
-        .rank-input:focus {
-            outline: none;
-            border-color: #4facfe;
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-        }
-        
-        .rank-input.valid {
-            border-color: #28a745;
-            background: #f8fff9;
-        }
-        
-        .rank-input.invalid {
-            border-color: #dc3545;
-            background: #fff8f8;
+        .rank-text {
+            font-size: 0.7em;
+            color: #6c757d;
+            text-align: center;
+            white-space: nowrap;
         }
         
         .validation-message {
@@ -473,8 +486,8 @@
                 instruction.innerHTML = `
                     <strong>📋 평가 방법:</strong><br>
                     • 이미지를 클릭하면 큰 화면으로 볼 수 있습니다<br>
-                    • 1위(가장 우수)부터 5위(가장 미흡)까지 중복되지 않게 순위를 입력해주세요<br>
-                    • 모든 순위를 입력해야 다음 단계로 진행할 수 있습니다
+                    • 각 그래프에 대해 1점(가장 우수)부터 5점(가장 미흡)까지 점수를 선택해주세요<br>
+                    • 모든 그래프를 평가해야 다음 단계로 진행할 수 있습니다
                 `;
                 div.appendChild(instruction);
 
@@ -499,19 +512,42 @@
 
                     const label = document.createElement('div');
                     label.className = 'rank-label';
-                    label.textContent = '순위';
+                    label.textContent = '점수 선택';
                     rankContainer.appendChild(label);
 
-                    const input = document.createElement('input');
-                    input.type = 'number';
-                    input.min = 1;
-                    input.max = 5;
-                    input.placeholder = '?';
-                    input.className = 'rank-input';
-                    input.name = `rank-${index}-${num}`;
-                    input.addEventListener('input', () => validateQuestion(index));
-                    rankContainer.appendChild(input);
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'rank-options';
 
+                    // 1점(최고)부터 5점(최저)까지 라디오 버튼 생성
+                    for (let score = 1; score <= 5; score++) {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'rank-option';
+
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = `rank-${index}-${num}`;
+                        radio.value = score;
+                        radio.className = 'rank-radio';
+                        radio.addEventListener('change', () => validateQuestion(index));
+                        optionDiv.appendChild(radio);
+
+                        const numberLabel = document.createElement('div');
+                        numberLabel.className = 'rank-number';
+                        numberLabel.textContent = score;
+                        optionDiv.appendChild(numberLabel);
+
+                        const textLabel = document.createElement('div');
+                        textLabel.className = 'rank-text';
+                        textLabel.textContent = score === 1 ? '최고' : 
+                                              score === 2 ? '좋음' :
+                                              score === 3 ? '보통' :
+                                              score === 4 ? '미흡' : '최저';
+                        optionDiv.appendChild(textLabel);
+
+                        optionsContainer.appendChild(optionDiv);
+                    }
+
+                    rankContainer.appendChild(optionsContainer);
                     itemDiv.appendChild(rankContainer);
                     grid.appendChild(itemDiv);
                 });
@@ -529,44 +565,40 @@
 
         function validateQuestion(questionIndex) {
             const questionDiv = document.getElementById(`question-${questionIndex}`);
-            const inputs = questionDiv.querySelectorAll('.rank-input');
+            const radioGroups = questionDiv.querySelectorAll('.rank-options');
             const validationDiv = document.getElementById(`validation-${questionIndex}`);
             const imageItems = questionDiv.querySelectorAll('.image-item');
             
-            const values = Array.from(inputs).map(input => parseInt(input.value) || 0);
-            const filledValues = values.filter(v => v > 0);
-            const uniqueValues = [...new Set(filledValues)];
+            let completedCount = 0;
             
-            // 입력 상태에 따른 시각적 피드백
-            inputs.forEach((input, idx) => {
-                const value = parseInt(input.value) || 0;
+            // 각 그래프별로 라디오 버튼 선택 확인
+            radioGroups.forEach((group, idx) => {
+                const radios = group.querySelectorAll('.rank-radio');
                 const imageItem = imageItems[idx];
+                let isSelected = false;
                 
-                if (value === 0) {
-                    input.className = 'rank-input';
-                    imageItem.classList.remove('selected');
-                } else if (filledValues.filter(v => v === value).length > 1) {
-                    input.className = 'rank-input invalid';
+                radios.forEach(radio => {
+                    if (radio.checked) {
+                        isSelected = true;
+                        completedCount++;
+                    }
+                });
+                
+                // 시각적 피드백
+                if (isSelected) {
                     imageItem.classList.add('selected');
                 } else {
-                    input.className = 'rank-input valid';
-                    imageItem.classList.add('selected');
+                    imageItem.classList.remove('selected');
                 }
             });
             
             // 검증 메시지 업데이트
-            if (filledValues.length === 0) {
+            if (completedCount === 0) {
                 validationDiv.textContent = '';
                 validationDiv.className = 'validation-message';
-            } else if (filledValues.length !== uniqueValues.length) {
-                validationDiv.textContent = '⚠️ 중복된 순위가 있습니다. 각각 다른 순위를 입력해주세요.';
-                validationDiv.className = 'validation-message error';
-            } else if (filledValues.length !== 5) {
-                validationDiv.textContent = `📝 ${filledValues.length}/5개 완료. 모든 그래프에 순위를 입력해주세요.`;
+            } else if (completedCount !== 5) {
+                validationDiv.textContent = `📝 ${completedCount}/5개 완료. 모든 그래프에 점수를 선택해주세요.`;
                 validationDiv.className = 'validation-message';
-            } else if (Math.min(...filledValues) !== 1 || Math.max(...filledValues) !== 5) {
-                validationDiv.textContent = '⚠️ 1위부터 5위까지 순서대로 입력해주세요.';
-                validationDiv.className = 'validation-message error';
             } else {
                 validationDiv.textContent = '✅ 완료되었습니다!';
                 validationDiv.className = 'validation-message success';
@@ -643,23 +675,28 @@
 
             questions.forEach((q, idx) => {
                 const questionDiv = document.getElementById(`question-${idx}`);
-                const inputs = questionDiv.querySelectorAll('.rank-input');
-                const rankings = {};
+                const radioGroups = questionDiv.querySelectorAll('.rank-options');
+                const scores = {};
                 
-                inputs.forEach(input => {
-                    const sampleNum = input.name.split('-')[2];
-                    const rank = parseInt(input.value);
-                    rankings[`sample${sampleNum.padStart(2, '0')}`] = rank;
+                radioGroups.forEach((group, groupIdx) => {
+                    const radios = group.querySelectorAll('.rank-radio');
+                    const sampleNum = radios[0].name.split('-')[2]; // 샘플 번호 추출
+                    
+                    radios.forEach(radio => {
+                        if (radio.checked) {
+                            scores[`sample${sampleNum.padStart(2, '0')}`] = parseInt(radio.value);
+                        }
+                    });
                 });
                 
-                // 순위별로 정렬된 샘플 배열 생성
-                const sortedSamples = Object.entries(rankings)
+                // 점수별로 정렬된 샘플 배열 생성 (1점이 가장 좋음)
+                const sortedSamples = Object.entries(scores)
                     .sort(([,a], [,b]) => a - b)
                     .map(([sample,]) => sample);
                 
                 surveyData.answers[q.title] = {
-                    rankings: rankings,
-                    orderedSamples: sortedSamples
+                    scores: scores,
+                    rankedSamples: sortedSamples
                 };
             });
             
