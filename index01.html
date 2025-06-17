@@ -413,9 +413,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
-        // EmailJS 초기화
+      // EmailJS 초기화
         emailjs.init("f3-fPmJ7cP5TXmW7w"); // Public Key 설정됨
-        
+
         const questions = [
             {
                 title: "정보 밀도 (Information Density)",
@@ -453,7 +453,7 @@
 
         const sampleCount = 30;
         const showPerQuestion = 5;
-        let currentQuestionIndex = 0;
+        // let currentQuestionIndex = 0; // 이 변수는 현재 사용되지 않는 것 같습니다.
 
         function shuffle(array) {
             const newArray = [...array];
@@ -467,7 +467,7 @@
         function renderSurvey() {
             const container = document.getElementById('survey');
             container.innerHTML = '';
-            
+
             questions.forEach((q, index) => {
                 const div = document.createElement('div');
                 div.className = 'question';
@@ -500,6 +500,7 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'image-item';
                     itemDiv.dataset.sample = num;
+                    itemDiv.id = `q${index}-item${num}`; // 각 이미지 아이템에 고유 ID 부여
 
                     const img = document.createElement('img');
                     img.src = `thumbnails/sample${num.toString().padStart(2, '0')}.png`;
@@ -519,17 +520,19 @@
                     const optionsContainer = document.createElement('div');
                     optionsContainer.className = 'rank-options';
 
-                    // 1점(최고)부터 5점(최저)까지 라디오 버튼 생성
                     for (let score = 1; score <= 5; score++) {
                         const optionDiv = document.createElement('div');
                         optionDiv.className = 'rank-option';
 
                         const radio = document.createElement('input');
                         radio.type = 'radio';
-                        radio.name = `rank-${index}-${num}`;
+                        // 라디오 버튼의 name을 이미지 아이템별로 고유하게 설정
+                        radio.name = `rank-${index}-item-${num}`; // 변경: 이미지별로 name 다르게
                         radio.value = score;
                         radio.className = 'rank-radio';
-                        radio.addEventListener('change', () => validateQuestion(index));
+                        // radio.dataset.questionIndex = index; // question 인덱스 저장
+                        // radio.dataset.itemNum = num; // item 번호 저장
+                        radio.addEventListener('change', (event) => handleRadioChange(event, index)); // 변경: 이벤트 핸들러 수정
                         optionDiv.appendChild(radio);
 
                         const numberLabel = document.createElement('div');
@@ -539,7 +542,7 @@
 
                         const textLabel = document.createElement('div');
                         textLabel.className = 'rank-text';
-                        textLabel.textContent = score === 1 ? '최고' : 
+                        textLabel.textContent = score === 1 ? '최고' :
                                               score === 2 ? '좋음' :
                                               score === 3 ? '보통' :
                                               score === 4 ? '미흡' : '최저';
@@ -562,117 +565,138 @@
 
                 container.appendChild(div);
             });
-            
-            console.log('Survey rendered, checking if submit buttons exist...');
-            // 설문이 렌더링된 후 버튼들이 존재하는지 확인
-            const emailBtn = document.getElementById('email-btn');
-            const downloadBtn = document.getElementById('download-btn');
-            console.log('Submit buttons after render:', {
-                emailBtn: !!emailBtn,
-                downloadBtn: !!downloadBtn
+        }
+
+        // 라디오 버튼 변경 시 호출되는 함수
+        function handleRadioChange(event, questionIndex) {
+            // const questionIndex = parseInt(event.target.dataset.questionIndex);
+            updateRadioDisabledStates(questionIndex);
+            validateQuestion(questionIndex); // 유효성 검사 및 진행률 업데이트 포함
+        }
+
+        // 특정 질문 내에서 라디오 버튼 비활성화 상태 업데이트
+        function updateRadioDisabledStates(questionIndex) {
+            const questionDiv = document.getElementById(`question-${questionIndex}`);
+            const allRadiosInQuestion = questionDiv.querySelectorAll('.rank-radio');
+            const imageItems = questionDiv.querySelectorAll('.image-item');
+            const selectedScoresInQuestion = new Set(); // 현재 질문에서 이미 선택된 점수들
+
+            // 현재 질문에서 어떤 점수들이 선택되었는지 파악
+            imageItems.forEach(item => {
+                const checkedRadio = item.querySelector('.rank-radio:checked');
+                if (checkedRadio) {
+                    selectedScoresInQuestion.add(parseInt(checkedRadio.value));
+                }
+            });
+
+            // 모든 라디오 버튼을 순회하며 비활성화/활성화 처리
+            allRadiosInQuestion.forEach(radio => {
+                const currentRadioScore = parseInt(radio.value);
+                const parentItem = radio.closest('.image-item');
+                const ownCheckedRadio = parentItem.querySelector('.rank-radio:checked');
+
+                if (ownCheckedRadio && ownCheckedRadio === radio) {
+                    // 자기 자신이 이미 선택된 경우: 항상 활성화
+                    radio.disabled = false;
+                } else if (selectedScoresInQuestion.has(currentRadioScore)) {
+                    // 다른 이미지에서 이미 이 점수가 선택된 경우: 비활성화
+                    radio.disabled = true;
+                } else {
+                    // 그 외의 경우 (아직 선택되지 않은 점수): 활성화
+                    radio.disabled = false;
+                }
             });
         }
 
+
         function validateQuestion(questionIndex) {
-            console.log(`Validating question ${questionIndex}`);
             const questionDiv = document.getElementById(`question-${questionIndex}`);
             const imageItems = questionDiv.querySelectorAll('.image-item');
             const validationDiv = document.getElementById(`validation-${questionIndex}`);
-            
-            console.log(`Found ${imageItems.length} image items`);
-            
+
             let completedCount = 0;
-            let selectedValues = [];
-            let hasDuplicates = false;
-            
-            // 각 이미지 아이템별로 라디오 버튼 선택 확인
-            imageItems.forEach((imageItem, idx) => {
-                const radios = imageItem.querySelectorAll('input[type="radio"]');
-                console.log(`Image item ${idx}: found ${radios.length} radios`);
-                
-                let isSelected = false;
-                let selectedValue = null;
-                
-                radios.forEach(radio => {
-                    console.log(`Radio ${radio.name} = ${radio.value}, checked: ${radio.checked}`);
-                    if (radio.checked) {
-                        isSelected = true;
-                        selectedValue = parseInt(radio.value);
-                    }
-                });
-                
-                if (isSelected) {
+            const selectedValues = [];
+
+            imageItems.forEach(imageItem => {
+                const checkedRadio = imageItem.querySelector('input[type="radio"]:checked');
+                if (checkedRadio) {
                     completedCount++;
-                    selectedValues.push(selectedValue);
+                    selectedValues.push(parseInt(checkedRadio.value));
                     imageItem.classList.add('selected');
-                    console.log(`Image item ${idx} is selected with value ${selectedValue}`);
                 } else {
                     imageItem.classList.remove('selected');
-                    console.log(`Image item ${idx} is NOT selected`);
                 }
             });
-            
-            // 중복 값 확인
+
             const uniqueValues = [...new Set(selectedValues)];
-            hasDuplicates = selectedValues.length !== uniqueValues.length;
-            
-            console.log(`Question ${questionIndex}: ${completedCount}/5 completed, selectedValues: [${selectedValues}], duplicates: ${hasDuplicates}`);
-            
-            // 검증 메시지 업데이트
+            const hasDuplicates = selectedValues.length !== uniqueValues.length;
+
             if (completedCount === 0) {
                 validationDiv.textContent = '';
                 validationDiv.className = 'validation-message';
             } else if (hasDuplicates) {
-                validationDiv.textContent = '⚠️ 중복된 점수가 있습니다. 각 그래프마다 다른 점수를 선택해주세요.';
+                // 이 로직은 updateRadioDisabledStates로 인해 발생하기 어려워짐
+                validationDiv.textContent = '⚠️ 중복된 점수가 있습니다. (오류: 관리자에게 문의)';
                 validationDiv.className = 'validation-message error';
-            } else if (completedCount !== 5) {
-                validationDiv.textContent = `📝 ${completedCount}/5개 완료. 모든 그래프에 점수를 선택해주세요.`;
+            } else if (completedCount < showPerQuestion) { // 5 대신 showPerQuestion 사용
+                validationDiv.textContent = `📝 ${completedCount}/${showPerQuestion}개 완료. 모든 그래프에 점수를 선택해주세요.`;
                 validationDiv.className = 'validation-message';
-            } else {
+            } else { // completedCount === showPerQuestion && !hasDuplicates
                 validationDiv.textContent = '✅ 완료되었습니다!';
                 validationDiv.className = 'validation-message success';
             }
-            
-            updateProgress();
+            updateProgress(); // 유효성 검사 후 항상 진행률 업데이트
         }
 
         function updateProgress() {
-            let completedQuestions = 0;
-            
+            let completedQuestionsCount = 0; // 변수명 변경
+
             questions.forEach((_, index) => {
                 const questionDiv = document.getElementById(`question-${index}`);
-                const inputs = questionDiv.querySelectorAll('.rank-input');
-                const values = Array.from(inputs).map(input => parseInt(input.value) || 0);
-                const filledValues = values.filter(v => v > 0);
-                const uniqueValues = [...new Set(filledValues)];
-                
-                if (filledValues.length === 5 && 
-                    filledValues.length === uniqueValues.length && 
-                    Math.min(...filledValues) === 1 && 
-                    Math.max(...filledValues) === 5) {
-                    completedQuestions++;
+                const imageItems = questionDiv.querySelectorAll('.image-item');
+                let scoresInThisQuestion = [];
+                let allImagesRated = true;
+
+                imageItems.forEach(item => {
+                    const checkedRadio = item.querySelector('.rank-radio:checked');
+                    if (checkedRadio) {
+                        scoresInThisQuestion.push(parseInt(checkedRadio.value));
+                    } else {
+                        allImagesRated = false; // 하나라도 평가 안된 이미지 있으면 미완료
+                    }
+                });
+
+                const uniqueScores = [...new Set(scoresInThisQuestion)];
+                // 모든 이미지가 평가되었고, 유니크한 점수의 개수가 평가할 이미지 개수와 같으면 완료
+                if (allImagesRated && uniqueScores.length === showPerQuestion) {
+                    completedQuestionsCount++;
                 }
             });
-            
-            const progressPercent = Math.round((completedQuestions / questions.length) * 100);
+
+            const progressPercent = Math.round((completedQuestionsCount / questions.length) * 100);
             document.getElementById('progress-fill').style.width = `${progressPercent}%`;
-            document.getElementById('progress-text').textContent = 
-                `진행률: ${progressPercent}% (${completedQuestions}/${questions.length} 완료)`;
-            
-            const submitBtn = document.getElementById('submit-btn');
+            document.getElementById('progress-text').textContent =
+                `진행률: ${progressPercent}% (${completedQuestionsCount}/${questions.length} 완료)`;
+
             const emailBtn = document.getElementById('email-btn');
             const downloadBtn = document.getElementById('download-btn');
             const completionStatus = document.getElementById('completion-status');
-            
-            if (completedQuestions === questions.length) {
-                submitBtn.disabled = false;
-                completionStatus.textContent = '🎉 모든 질문이 완료되었습니다! 결과를 다운로드해주세요.';
-                completionStatus.style.color = '#28a745';
+
+            if (completedQuestionsCount === questions.length) {
+                if(emailBtn) emailBtn.disabled = false; // 버튼 존재 여부 확인
+                if(downloadBtn) downloadBtn.disabled = false; // 버튼 존재 여부 확인
+                if(completionStatus) {
+                    completionStatus.textContent = '🎉 모든 질문이 완료되었습니다! 결과를 제출해주세요.';
+                    completionStatus.style.color = '#28a745';
+                }
             } else {
-                submitBtn.disabled = true;
-                completionStatus.textContent = 
-                    `${questions.length - completedQuestions}개의 질문이 남아있습니다. 모든 질문에 답변해주세요.`;
-                completionStatus.style.color = '#6c757d';
+                if(emailBtn) emailBtn.disabled = true;
+                if(downloadBtn) downloadBtn.disabled = true;
+                if(completionStatus) {
+                    completionStatus.textContent =
+                        `${questions.length - completedQuestionsCount}개의 질문이 남아있습니다. 모든 질문에 답변해주세요.`;
+                    completionStatus.style.color = '#6c757d';
+                }
             }
         }
 
@@ -698,7 +722,7 @@
                 metadata: {
                     totalQuestions: questions.length,
                     samplesPerQuestion: showPerQuestion,
-                    completed: true
+                    completed: true // 이 시점에는 완료되었다고 가정
                 }
             };
 
@@ -706,40 +730,35 @@
                 const questionDiv = document.getElementById(`question-${idx}`);
                 const imageItems = questionDiv.querySelectorAll('.image-item');
                 const scores = {};
-                
-                imageItems.forEach((imageItem, imgIdx) => {
-                    const radios = imageItem.querySelectorAll('.rank-radio');
-                    const sampleNum = radios[0].name.split('-')[2]; // 샘플 번호 추출
-                    
-                    radios.forEach(radio => {
-                        if (radio.checked) {
-                            scores[`sample${sampleNum.padStart(2, '0')}`] = parseInt(radio.value);
-                        }
-                    });
+
+                imageItems.forEach((imageItem) => {
+                    const sampleNum = imageItem.dataset.sample; // data-sample 속성에서 샘플 번호 가져오기
+                    const checkedRadio = imageItem.querySelector('.rank-radio:checked');
+                    if (checkedRadio) {
+                        scores[`sample${sampleNum.toString().padStart(2, '0')}`] = parseInt(checkedRadio.value);
+                    }
                 });
-                
-                // 점수별로 정렬된 샘플 배열 생성 (1점이 가장 좋음)
+
                 const sortedSamples = Object.entries(scores)
                     .sort(([,a], [,b]) => a - b)
                     .map(([sample,]) => sample);
-                
+
                 surveyData.answers[q.title] = {
                     scores: scores,
                     rankedSamples: sortedSamples
                 };
             });
-            
+
             return surveyData;
         }
 
         function submitSurveyByEmail() {
             const surveyData = prepareSurveyData();
-            
+
             const emailBtn = document.getElementById('email-btn');
             emailBtn.textContent = '📤 전송 중...';
             emailBtn.disabled = true;
-            
-            // seokyeol@gmail.com으로 전송
+
             emailjs.send('service_g8qk7mj', 'template_survey_results', {
                 to_email: 'seokyeol@gmail.com',
                 survey_data: JSON.stringify(surveyData, null, 2),
@@ -751,8 +770,6 @@
                 alert('설문 결과가 성공적으로 전송되었습니다!\n참여해주셔서 감사합니다.');
                 emailBtn.textContent = '✅ 전송 완료';
                 emailBtn.style.background = '#28a745';
-                
-                // 전송 완료 후 다운로드도 비활성화 (중복 제출 방지)
                 document.getElementById('download-btn').disabled = true;
                 document.getElementById('download-btn').textContent = '제출 완료';
             }).catch(function(error) {
@@ -782,11 +799,19 @@
             alert("설문 결과가 성공적으로 다운로드되었습니다!\n파일명: " + filename);
         }
 
-        // 키보드 단축키
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closePopup();
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderSurvey();
+            // 초기 진행률 업데이트 및 각 질문의 라디오 버튼 상태 초기화
+            questions.forEach((_, index) => {
+                updateRadioDisabledStates(index); // 각 질문별 라디오 버튼 초기 상태 설정
+            });
+            updateProgress(); // 전체 진행률 초기화
         });
 
         // DOM이 완전히 로드된 후 실행
